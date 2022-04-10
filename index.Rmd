@@ -34,11 +34,21 @@ require(ggplot2)
 require(reshape2)
 require(fpp3)
 ```
-# ** Abstract**
+
+# **Abstract**
+
+The following paper is trying to forecast inflation and seeing if our models would be good at predicting it. In this case, the hypothesis was that modeling unemployment rate would be a good predictor basing off the Phillip's Curves concept. After, modeling and forecasting, the total capacity utilization was the best predictor for inflation. Though it may have seemed the best, total capacity utilization would be a good measure in the short run. 
+
+
+
 
 # **Introduction**
 
-We tend to look at inflation to see how much prices will be increasing. Looking at inflation, the United States government can be able to utilize both fiscal and monetary policy. Inflation also effects small businesses and investments too. Our goal is to use to use the following code to forecast averages of inflation. We will use a Phillips curve as a base to evaluate the performance of our models. According to the Phillips Curve, the unemployment rate and the inflation rate should be inverted with each other. That being said as inflation is high, the unemployment rate should be low and vice-versa. We would also want to 
+We tend to look at inflation to see how much prices will be increasing. Looking at inflation, the United States government can be able to utilize both fiscal and monetary policy. Inflation also effects small businesses and investments too. Our goal is to use to use the following code to forecast averages of inflation. We will use a Phillips curve as a base to evaluate the performance of our models. According to the Phillips Curve, the unemployment rate and the inflation rate should be inverted with each other. That being said as inflation is high, the unemployment rate should be low and vice-versa. Also, because of COVID-19 and the shocks to the economy, we hope to see how different variables can predict the changes in the inflation rate. We want to be able to train the data from the past and test the variables to see what the best predictor of inflation is in the future. 
+
+For the full code and HTMl please click the link below. 
+
+[link](https://nikeshp120699.github.io/)
 
 # **Hypothesis**
 
@@ -58,7 +68,7 @@ First, we want to define the following variables being used:
 
 **"INDPRO"** is the index of total industrial production which measures all output in the United States regarding the sector of manufacturing, mining, electric, etc.  
 
-We will be using the following variables to help see if there is any improvement within forecasting the model. All the data provided is from January, 1982 to current times. Some of the variables needed to be transposed in order to account for seasonality. For example, the variable "MICH" needed to be differenced because the original data was not seasonally adjusted. 
+We will be using the following variables to help see if there is any improvement within forecasting the model. All the data provided is from January, 1982 to current times. Some of the variables needed to be transposed in order to account for seasonality. For example, the variable "MICH" needed to be differenced because the original data was not seasonally adjusted. Other variables like "PECEPI" and "INDPRO" have tendencies to exponentiate, so we took the log of the variables.
 
 
 ```{r GetData, message=FALSE}
@@ -93,13 +103,16 @@ Z <- Xw %>% select(c(PCEPI, UNRATE, MICH, TCU, INDPRO)) %>%
 train_data <- Z %>% filter_index(~ "2019-12")
 test_data <- Z %>% filter_index("2020-01" ~ .)
 ```
+
+Below are plots of each variable showing if it is stationary. In this case, the unemployment rate variable is the most stationary variable. However, when looking at the time period of 2018 and beyond, every variable shows to be voliatile which is not a good sign. This is because we want it stationary to make sure when we forecast our data the statistical properties remain the same over time. In this case, almost all variables do change over time indicating that having an amazing forecast will be more complex. 
+
 ```{r Phillips Curve, message= FALSE}
 Zm <- melt(Z, "Month")
 ggplot(Zm, aes(Month, value)) + 
   geom_line() + 
   facet_wrap(~variable, scales = "free", ncol = 2)
 ```
-After the proper transformations
+
 ```{r lags, message= FALSE}
 fitPC <- train_data %>% 
   model(
@@ -152,7 +165,7 @@ tidy(fitPC)
 # **Analysis**
 
 
-```{r model accuracy}
+```{r model accuracy training}
 Fit <- fitPC %>% 
   mutate(Ensemble = (mUR + mtcu + mindpro + mmich)/4)
 Fit_check <- accuracy(Fit) %>%
@@ -161,7 +174,12 @@ Fit_check <- accuracy(Fit) %>%
     kableExtra::kable_styling()
 
 Fit_check
+```
 
+Now we test the model accuracy of the data. We analyse the fit of the past data to see what model is the closest to the actual data itself. MAPE is the mean absolute percentage error. This is used to measure forecast accuracy. Since we are forecasting many models, it would be wise to look at the MAPE to determine the best model. By looking at the training data, the variable "INDPRO" has the lowest MAPE, indicating it has the lowest average percentage error. This means that looking at the industry production variable is the best at recognizing the patterns of the actual inflation data. The variable "TCU" is not far behind either.
+
+
+```{r model accuracy test}
 Fit_forecast <- Fit %>% 
   forecast(new_data = test_data)
 
@@ -173,13 +191,16 @@ Fit_accuracy <- accuracy(Fit_forecast, Z) %>%
 Fit_accuracy
 ```
 
+Now looking at the test data, which is used to evaluate our forecast accuracy, we can see the MAPE is actually lowest with the "TCU" variable. In this case, this would mean that the total capacity utilization variable is the best at predicting the actual data. We can look at the plot below and see that "TCU" shows the same information when predicting the inflation rate. Overall, because the MAPE's for each variable are still relatively high, this means are forecast are not best predictors. This would line up with the fact that each variable is not stationary. 
+
+
 ```{r plot forecast}
 Fit_forecast %>% autoplot(filter(Z, year(Month) > 2016), level = c(95))
 ```
 
 # **Conclusion**
 
-After further analysis, the initial hypothesis that unemployment rate would be a good indicator of inflation due to the inverse relationship proves to be false. It turns out that TCU (index of total capacity utilization) would be a better model for predicting inflation in the short run (1-6 months). According to the forecast plot, it would seem that the total capacity utilization predicts inflation quite well. However, after 6 months, total capacity utilization would not be the best option. 
+After further analysis, the initial hypothesis that unemployment rate would be a good indicator of inflation due to the inverse relationship proved to be false. It turns out that TCU (index of total capacity utilization) would be a better model for predicting inflation in the short run (1-6 months). According to the forecast plot, it would seem that the total capacity utilization predicts inflation quite well. However, after 6 months, total capacity utilization would not be the best option. 
 
 In theory, this makes sense due to the fact that total capacity utilization is the percent of resources firms/corporations use to produce goods. During the COVID period (2020-), in the month of January 2021, the total capacity utilization was predicted to be at the same rate of the predicted inflation rate. In this period of time, the economy was above its natural capacity utilization rate, indicating that the demand for goods was really high and supply is trying to catch up. This would indicate that inflation would also increase too. In the long run, different causal variables would create the notion that capacity utilization rate would not be the best predictor of the inflation rate.  
 
